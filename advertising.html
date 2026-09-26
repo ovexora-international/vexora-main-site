@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advertising Board — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item active" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <h2>📢 Advertising Board</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Submit payment with proof, then launch your own PTC ad.</p>
+    </div>
+
+    <div class="grid grid-2">
+
+      <!-- STEP 1: PAYMENT -->
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Step 1 — Send Payment</h3>
+        <p style="color:var(--text-dim); font-size:0.87rem; margin-bottom:18px;">
+          To run an ad, first send payment via FaucetPay or your Crypto wallet.
+          Attach a screenshot as proof, then wait for admin approval.
+        </p>
+
+        <div class="field">
+          <label>Payment Method</label>
+          <select id="pay-method">
+            <option value="faucetpay">FaucetPay</option>
+            <option value="crypto">Crypto Wallet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Amount (USD)</label>
+          <input type="number" id="pay-amount" placeholder="e.g. 10">
+        </div>
+
+        <div class="field">
+          <label>Transaction Reference / Hash</label>
+          <input type="text" id="pay-reference" placeholder="Paste your TXID or reference">
+        </div>
+
+        <div class="field">
+          <label>Payment Proof (Screenshot)</label>
+          <input type="file" id="pay-proof" accept="image/*" onchange="previewProof(this, 'proof-preview')">
+          <img id="proof-preview" style="display:none; margin-top:10px; max-height:160px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+        </div>
+
+        <div class="ip-note" style="margin-bottom:16px;">
+          <span class="dot"></span>
+          FaucetPay ID: <b>vexora@faucetpay.io</b> &nbsp;|&nbsp; USDT (TRC20): <b>TXXXXXXXXXXXXXXXXXXX</b>
+        </div>
+
+        <button class="btn btn-gold btn-block" onclick="submitPayment()">Submit Payment Record</button>
+        <div id="payment-msg" style="margin-top:12px; font-size:0.85rem;"></div>
+      </div>
+
+      <!-- STEP 2: CREATE AD -->
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Step 2 — Create a PTC Ad</h3>
+        <p style="color:var(--text-dim); font-size:0.87rem; margin-bottom:18px;">
+          Once approved, submit your ad here. Price varies by duration.
+        </p>
+
+        <div class="field">
+          <label>Ad Title</label>
+          <input type="text" id="ad-title" placeholder="e.g. Visit my website">
+        </div>
+
+        <div class="field">
+          <label>Target URL</label>
+          <input type="text" id="ad-url" placeholder="https://...">
+        </div>
+
+        <div class="field">
+          <label>Duration</label>
+          <select id="ad-duration" onchange="updatePrice()">
+            <option value="5">5 seconds — user earns 20 Token</option>
+            <option value="10">10 seconds — user earns 30 Token</option>
+            <option value="30">30 seconds — user earns 50 Token</option>
+            <option value="60">60 seconds — user earns 75 Token</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Total Views Needed</label>
+          <input type="number" id="ad-views" placeholder="e.g. 1000" oninput="updatePrice()">
+        </div>
+
+        <div class="card" style="background:var(--surface-2); margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:var(--text-dim);">User reward per view</span>
+            <span id="price-per-view" class="price-tag">20 Token</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px;">
+            <span style="color:var(--text-dim);">Total Cost (you pay)</span>
+            <span id="total-cost" class="price-tag">0.00000 USDT</span>
+          </div>
+        </div>
+
+        <button class="btn btn-teal btn-block" onclick="submitAd()">Submit Ad</button>
+        <div id="ad-msg" style="margin-top:12px; font-size:0.85rem;"></div>
+      </div>
+
+    </div>
+
+    <div class="section-head">
+      <h2>My Payment History</h2>
+    </div>
+    <div class="card table-scroll">
+      <table>
+        <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Proof</th></tr></thead>
+        <tbody id="payment-history">
+          <tr><td colspan="5" style="color:var(--text-dim);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  const rewardTokenMap = { "5": 20, "10": 30, "30": 50, "60": 75 };
+  const PLATFORM_MARGIN = 1.3;
+  let proofBase64 = null;
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+    loadPaymentHistory();
+  }
+
+  function updatePrice() {
+    const duration = document.getElementById('ad-duration').value;
+    const views = Number(document.getElementById('ad-views').value || 0);
+    const rewardTokens = rewardTokenMap[duration];
+    const costPerViewUSDT = tokensToUSDT(rewardTokens) * PLATFORM_MARGIN;
+    document.getElementById('price-per-view').innerText = formatTokens(rewardTokens);
+    document.getElementById('total-cost').innerText = (costPerViewUSDT * views).toFixed(5) + ' USDT';
+  }
+
+  function previewProof(input, previewId) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      proofBase64 = e.target.result;
+      const img = document.getElementById(previewId);
+      img.src = proofBase64;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function submitPayment() {
+    const amount = document.getElementById('pay-amount').value;
+    const method = document.getElementById('pay-method').value;
+    const reference = document.getElementById('pay-reference').value;
+    const msg = document.getElementById('payment-msg');
+
+    if (!amount || !reference) {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = 'Amount and reference are both required.';
+      return;
+    }
+
+    msg.style.color = 'var(--text-dim)';
+    msg.innerText = 'Submitting...';
+
+    const payload = { userId: user.userId, amount, method, reference };
+    if (proofBase64) payload.proofImageBase64 = proofBase64;
+
+    const res = await apiPost('depositFunds', payload);
+    if (res.success) {
+      msg.style.color = 'var(--success)';
+      msg.innerText = res.message;
+      loadPaymentHistory();
+      proofBase64 = null;
+      document.getElementById('proof-preview').style.display = 'none';
+      document.getElementById('pay-proof').value = '';
+    } else {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = res.error || 'Something went wrong.';
+    }
+  }
+
+  async function submitAd() {
+    const title = document.getElementById('ad-title').value;
+    const targetUrl = document.getElementById('ad-url').value;
+    const duration = document.getElementById('ad-duration').value;
+    const totalViews = document.getElementById('ad-views').value;
+    const msg = document.getElementById('ad-msg');
+
+    if (!title || !targetUrl || !totalViews) {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = 'Please fill in all fields.';
+      return;
+    }
+
+    msg.style.color = 'var(--text-dim)';
+    msg.innerText = 'Submitting...';
+
+    const res = await apiPost('submitAd', {
+      userId: user.userId,
+      email: user.email,
+      title, targetUrl, duration,
+      pricePerView: rewardTokenMap[duration],
+      totalViews
+    });
+
+    if (res.success) {
+      msg.style.color = 'var(--success)';
+      msg.innerText = res.message;
+    } else {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = res.error;
+    }
+  }
+
+  async function loadPaymentHistory() {
+    const res = await apiGet('getTransactions', { userId: user.userId });
+    const tbody = document.getElementById('payment-history');
+    if (res.success && res.transactions.filter(t => t.Type === 'deposit').length) {
+      tbody.innerHTML = res.transactions.filter(t => t.Type === 'deposit').map(t => {
+        const proofMatch = (t.Reference || '').match(/Proof: (\S+)/);
+        const proofLink = proofMatch ? `<a href="${proofMatch[1]}" target="_blank" style="color:var(--teal);">View</a>` : '—';
+        return `
+        <tr>
+          <td>${new Date(t.Timestamp).toLocaleDateString()}</td>
+          <td>${Number(t.Amount).toFixed(5)} USDT</td>
+          <td>${t.Method}</td>
+          <td><span class="status-pill status-${t.Status.toLowerCase()}">${t.Status}</span></td>
+          <td>${proofLink}</td>
+        </tr>
+      `;
+      }).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);">No payments yet.</td></tr>';
+    }
+  }
+
+  updatePrice();
+</script>
+
+</body>
+</html>

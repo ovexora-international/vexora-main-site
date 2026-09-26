@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earn Money — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <h2>💎 Earn Money</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Pick a method below and start earning tokens.</p>
+    </div>
+
+    <div class="grid grid-2 dash-tiles">
+      <a href="earn-ptc.html" class="dash-tile earn">
+        <div class="dash-tile-icon">🎬</div>
+        <h3>PTC Ads</h3>
+        <p>Watch short ads (5–60 seconds) and earn 20 to 75 tokens per view.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+      <a href="earn-faucet.html" class="dash-tile teal-tile">
+        <div class="dash-tile-icon">💧</div>
+        <h3>Faucet</h3>
+        <p>Free claim every 30 minutes. Random reward: 30–50 tokens.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+      <a href="earn-shortlinks.html" class="dash-tile earn">
+        <div class="dash-tile-icon">🔗</div>
+        <h3>Shortlinks</h3>
+        <p>Open a link, wait a moment, then come back to claim your reward.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+      <a href="earn-offerwalls.html" class="dash-tile teal-tile">
+        <div class="dash-tile-icon">🎁</div>
+        <h3>Offerwalls</h3>
+        <p>Complete app installs or surveys for bigger token rewards.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+</script>
+
+</body>
+</html>

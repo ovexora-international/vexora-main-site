@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faucet — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content" style="max-width:480px;">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+    </div>
+
+    <div class="card" style="padding:34px 24px; text-align:center;">
+      <div class="dash-tile-icon" style="margin:0 auto 18px; width:60px; height:60px; font-size:1.7rem;">💧</div>
+      <h2 style="margin-bottom:10px;">Free Faucet Claim</h2>
+      <p style="color:var(--text-dim); margin-bottom:6px; font-size:0.9rem;">Claim for free every <b>30 minutes</b>.</p>
+      <p style="color:var(--text-dim); margin-bottom:24px; font-size:0.85rem;">Random reward: <b style="color:var(--gold);">30 – 50 Token</b></p>
+
+      <div style="font-family:'Sora',sans-serif; font-size:2rem; font-weight:800; color:var(--gold); margin-bottom:22px;" id="countdown">Ready!</div>
+
+      <div id="captcha-wrap" style="display:flex; justify-content:center; margin-bottom:18px; overflow-x:auto;">
+        <div class="h-captcha" data-sitekey="PASTE_YOUR_HCAPTCHA_SITE_KEY_HERE" data-callback="onCaptchaSuccess" data-theme="dark"></div>
+      </div>
+
+      <button class="btn btn-gold btn-block" id="claim-btn" onclick="claimFaucet()" disabled>Verify Captcha First</button>
+      <div id="faucet-msg" style="margin-top:14px; font-size:0.85rem;"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  const COOLDOWN_MS = 30 * 60 * 1000;
+  let captchaToken = null;
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    refreshBalance();
+    checkCooldown();
+  }
+
+  function refreshBalance() {
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+
+  function onCaptchaSuccess(token) {
+    captchaToken = token;
+    if (!document.getElementById('claim-btn').dataset.cooldown) {
+      document.getElementById('claim-btn').disabled = false;
+      document.getElementById('claim-btn').innerText = 'Claim Now';
+    }
+  }
+
+  function getLastClaim() {
+    return Number(localStorage.getItem('vexora_faucet_' + user.userId) || 0);
+  }
+
+  function checkCooldown() {
+    const last = getLastClaim();
+    const remaining = COOLDOWN_MS - (Date.now() - last);
+    const btn = document.getElementById('claim-btn');
+
+    if (remaining > 0) {
+      btn.disabled = true;
+      btn.dataset.cooldown = 'true';
+      const interval = setInterval(() => {
+        const r = COOLDOWN_MS - (Date.now() - last);
+        if (r <= 0) {
+          clearInterval(interval);
+          document.getElementById('countdown').innerText = 'Ready!';
+          delete btn.dataset.cooldown;
+          btn.disabled = !captchaToken;
+          btn.innerText = captchaToken ? 'Claim Now' : 'Verify Captcha First';
+          return;
+        }
+        const mins = Math.floor(r / 60000);
+        const secs = Math.floor((r % 60000) / 1000);
+        document.getElementById('countdown').innerText = `${mins}m ${secs}s`;
+      }, 1000);
+    } else {
+      btn.disabled = !captchaToken;
+    }
+  }
+
+  async function claimFaucet() {
+    const msg = document.getElementById('faucet-msg');
+    if (!captchaToken) {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = 'Please verify the captcha first.';
+      return;
+    }
+
+    document.getElementById('claim-btn').disabled = true;
+    msg.style.color = 'var(--text-dim)';
+    msg.innerText = 'Claiming...';
+
+    const res = await apiPost('claimFaucet', { userId: user.userId, captchaToken });
+
+    if (res.success) {
+      localStorage.setItem('vexora_faucet_' + user.userId, Date.now());
+      msg.style.color = 'var(--success)';
+      msg.innerText = 'Congrats! ' + formatTokens(res.reward) + ' has been credited.';
+      refreshBalance();
+      captchaToken = null;
+      if (window.hcaptcha) hcaptcha.reset();
+      checkCooldown();
+    } else {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = res.error || 'Something went wrong.';
+      document.getElementById('claim-btn').disabled = false;
+      if (window.hcaptcha) hcaptcha.reset();
+      captchaToken = null;
+    }
+  }
+</script>
+
+</body>
+</html>

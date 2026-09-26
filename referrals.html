@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referral Program — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item active" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <h2>🤝 Referral Program</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Invite friends and earn bonuses plus ongoing commission on their earnings.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="margin-bottom:12px;">Your Referral Link</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="ref-link" readonly style="flex:1; min-width:200px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; color:var(--text); font-size:0.85rem;">
+        <button class="btn btn-gold" onclick="copyRefLink()">Copy Link</button>
+      </div>
+      <div id="copy-msg" style="margin-top:10px; font-size:0.85rem; color:var(--success);"></div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="stat-card accent">
+        <div class="stat-value" id="stat-total-refs">0</div>
+        <div class="stat-label">Total Referrals</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-value" id="stat-l1-earned">0 Token</div>
+        <div class="stat-label">Level 1 Commission Earned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-l2-earned">0 Token</div>
+        <div class="stat-label">Level 2 Commission Earned</div>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>How It Works</h2></div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:8px;">🎁 Signup Bonus</h3>
+        <p style="color:var(--text-dim); font-size:0.88rem; line-height:1.6;">
+          When someone you referred completes their <b>first successful withdrawal</b>,
+          you receive a one-time bonus of <b style="color:var(--gold);">25,000 Token</b>.
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:8px;">📈 Ongoing Commission</h3>
+        <p style="color:var(--text-dim); font-size:0.88rem; line-height:1.6;">
+          You also earn a percentage of your referrals' earnings, forever:
+        </p>
+        <ul style="color:var(--text-dim); font-size:0.88rem; line-height:1.8; padding-left:18px; margin-top:8px;">
+          <li><b style="color:var(--teal);">Level 1</b> (people you directly invite): <b>5%</b> of their earnings</li>
+          <li><b style="color:var(--teal);">Level 2</b> (people invited by your referrals): <b>2%</b> of their earnings</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    document.getElementById('ref-link').value = getReferralLink(user.userId);
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+
+    apiGet('getReferralStats', { userId: user.userId }).then(res => {
+      if (res.success) {
+        document.getElementById('stat-total-refs').innerText = res.totalReferrals;
+        document.getElementById('stat-l1-earned').innerText = formatTokens(res.level1CommissionEarned);
+        document.getElementById('stat-l2-earned').innerText = formatTokens(res.level2CommissionEarned);
+      }
+    });
+  }
+
+  function copyRefLink() {
+    const input = document.getElementById('ref-link');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+      document.getElementById('copy-msg').innerText = 'Link copied to clipboard!';
+      setTimeout(() => document.getElementById('copy-msg').innerText = '', 2500);
+    });
+  }
+</script>
+
+</body>
+</html>

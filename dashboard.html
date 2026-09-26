@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- TOP NAV: balance only -->
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE-OUT DRAWER MENU -->
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+
+    <div class="welcome-banner">
+      <div class="welcome-icon">🚀</div>
+      <div>
+        <h2 id="welcome-text">Welcome back</h2>
+        <p style="color:var(--text-dim); font-size:0.9rem; margin-top:4px;">Choose an option below to get started.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-3 dash-tiles">
+      <a href="earn-hub.html" class="dash-tile earn">
+        <div class="dash-tile-icon">💎</div>
+        <h3>Earn Money</h3>
+        <p>PTC ads, faucet, shortlinks &amp; offerwalls — all in one place.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+      <a href="withdraw.html" class="dash-tile withdraw">
+        <div class="dash-tile-icon">💳</div>
+        <h3>Withdrawal System</h3>
+        <p>Cash out your tokens via FaucetPay, Crypto, or PKR.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+      <a href="referrals.html" class="dash-tile teal-tile">
+        <div class="dash-tile-icon">🤝</div>
+        <h3>Referral Program</h3>
+        <p>Invite friends and earn bonuses plus ongoing commission.</p>
+        <span class="dash-tile-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="section-head">
+      <h2>🏆 Today's Top Earners</h2>
+      <a href="prize-pool.html" class="btn btn-outline" style="padding:8px 16px; font-size:0.85rem;">View Full Board →</a>
+    </div>
+    <div class="card table-scroll">
+      <table>
+        <thead><tr><th>Rank</th><th>User</th><th>Tokens Earned Today</th><th>Est. Prize</th></tr></thead>
+        <tbody id="mini-leaderboard"><tr><td colspan="4" style="color:var(--text-dim);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  if (user) {
+    document.getElementById('welcome-text').innerText = 'Welcome back, ' + user.name.split(' ')[0] + ' 👋';
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    // Single combined call for balance — faster and keeps the UI in sync
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) {
+        const bal = Number(res.user.Balance || 0);
+        document.getElementById('balance-amount').innerText = formatTokens(bal);
+        user.balance = bal;
+        saveSession(user);
+      }
+    });
+
+    apiGet('getPrizePool').then(res => {
+      const tbody = document.getElementById('mini-leaderboard');
+      if (res.success && res.leaderboard.length) {
+        tbody.innerHTML = res.leaderboard.slice(0, 5).map(row => `
+          <tr>
+            <td>#${row.rank}</td>
+            <td>${row.name}</td>
+            <td>${formatTokens(row.tokensEarned)}</td>
+            <td style="color:var(--gold); font-weight:600;">${formatTokens(row.estimatedPrize)}</td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-dim);">No earnings recorded yet today.</td></tr>';
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

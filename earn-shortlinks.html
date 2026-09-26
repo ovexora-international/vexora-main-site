@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortlinks — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+      <h2 style="margin-top:8px;">🔗 Shortlinks</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Open a link, wait for the required time, then come back to claim your reward.</p>
+    </div>
+
+    <div class="grid grid-3" id="links-container">
+      <div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">Loading links...</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+    loadLinks();
+  }
+
+  async function loadLinks() {
+    const res = await apiGet('getShortlinks');
+    const container = document.getElementById('links-container');
+    if (res.success && res.shortlinks.length) {
+      container.innerHTML = res.shortlinks.map(link => `
+        <div class="ad-card">
+          <div class="ad-card-top">
+            <span class="duration-tag">Shortlink</span>
+            <span class="price-tag">${formatTokens(link.Reward)}</span>
+          </div>
+          <div style="font-weight:600;">${link.Title}</div>
+          <button class="btn btn-gold btn-block" onclick='goToLink(${JSON.stringify(link)})'>Open Link</button>
+          <button class="btn btn-outline btn-block" onclick='claimLink("${link.LinkID}")'>Claim After Returning</button>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">No shortlinks available right now.</div>';
+    }
+  }
+
+  function goToLink(link) {
+    window.open(link.ShortURL || link.OriginalURL, '_blank');
+  }
+
+  async function claimLink(linkId) {
+    const res = await apiPost('completeShortlink', { userId: user.userId, linkId });
+    if (res.success) {
+      alert('Congrats! ' + formatTokens(res.reward) + ' has been credited.');
+      apiGet('getUserFull', { email: user.email }).then(r => {
+        if (r.success) document.getElementById('balance-amount').innerText = formatTokens(r.user.Balance || 0);
+      });
+    } else {
+      alert(res.error);
+    }
+  }
+</script>
+
+</body>
+</html>

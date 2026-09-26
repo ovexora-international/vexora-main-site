@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offerwalls — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+      <h2 style="margin-top:8px;">🎁 Offerwalls</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Complete app installs, surveys, or tasks to earn bigger rewards. Credited automatically.</p>
+    </div>
+
+    <div class="grid grid-3" id="walls-container">
+      <div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">Loading offerwalls...</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+    loadWalls();
+  }
+
+  async function loadWalls() {
+    const res = await apiGet('getOfferwalls');
+    const container = document.getElementById('walls-container');
+    if (res.success && res.offerwalls.length) {
+      container.innerHTML = res.offerwalls.map(w => `
+        <div class="earn-tile">
+          <div class="tile-icon">🎁</div>
+          <h3>${w.ProviderName}</h3>
+          <p>Complete tasks and receive rewards automatically.</p>
+          <button class="btn btn-gold btn-block" onclick='openWall(${JSON.stringify(w)})'>Open</button>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">No offerwalls configured yet.</div>';
+    }
+  }
+
+  function openWall(wall) {
+    // Some providers (like Bitcotask) embed a literal [USER_ID] placeholder
+    // inside the URL path itself; others expect a ?sub_id=... query param.
+    // Support both so any offerwall you add to the Sheet just works.
+    let url = wall.IframeURL;
+    if (url.includes('[USER_ID]')) {
+      url = url.replace('[USER_ID]', encodeURIComponent(user.userId));
+    } else {
+      const separator = url.includes('?') ? '&' : '?';
+      url += separator + 'sub_id=' + encodeURIComponent(user.userId);
+    }
+
+    // Opened in a new tab rather than an iframe: some offerwalls (Bitcotask
+    // included) break out of iframes anyway when a task is clicked, and
+    // third-party cookies inside an iframe are often blocked on mobile —
+    // which can silently break their own conversion tracking. Opening
+    // directly also means you can see the exact URL in the address bar,
+    // which makes debugging much easier.
+    window.open(url, '_blank');
+
+    // Refresh balance a little later in case the reward posts back quickly.
+    setTimeout(() => {
+      apiGet('getUserFull', { email: user.email }).then(res => {
+        if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+      });
+    }, 5000);
+  }
+</script>
+
+</body>
+</html>

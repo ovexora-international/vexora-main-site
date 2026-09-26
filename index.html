@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vexora International — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<div class="login-page">
+
+  <!-- Floating crypto icons background -->
+  <div class="float-icons" aria-hidden="true">
+    <span class="fi fi-1">₿</span>
+    <span class="fi fi-2">Ξ</span>
+    <span class="fi fi-3">💰</span>
+    <span class="fi fi-4">🪙</span>
+    <span class="fi fi-5">📈</span>
+    <span class="fi fi-6">💎</span>
+  </div>
+
+  <div class="login-hero">
+    <div class="brand-badge">🚀 Trusted Earning Network</div>
+    <div class="logo-big">Vexora <span>International</span></div>
+    <p>Watch ads, click short links, complete offers — and turn every small task into real earnings. One platform, multiple ways to earn, powered by crypto payouts.</p>
+
+    <div class="feature-list">
+      <div class="feature-item"><span class="fi-icon">🎬</span> Watch PTC ads and earn instantly</div>
+      <div class="feature-item"><span class="fi-icon">💧</span> Free faucet claims every 30 minutes</div>
+      <div class="feature-item"><span class="fi-icon">🔗</span> Complete shortlinks &amp; offerwalls</div>
+      <div class="feature-item"><span class="fi-icon">⚡</span> Fast LTC payouts via FaucetPay</div>
+    </div>
+
+    <div class="login-stats">
+      <div class="item">
+        <div class="num">4</div>
+        <div class="lab">Earning Methods</div>
+      </div>
+      <div class="item">
+        <div class="num">24/7</div>
+        <div class="lab">Live Ads Board</div>
+      </div>
+      <div class="item">
+        <div class="num">Ł</div>
+        <div class="lab">LTC Payouts</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-form-wrap">
+    <div class="login-box">
+      <div class="login-box-icon">🔐</div>
+      <h2>Welcome to Vexora</h2>
+      <div class="sub">Sign in with your Google account — no separate signup needed.</div>
+
+      <div id="g_id_signin_wrap">
+        <div id="g_id_onload"
+             data-client_id="PASTE_YOUR_GOOGLE_CLIENT_ID_HERE"
+             data-callback="handleGoogleLogin"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="signin_with"
+             data-size="large"
+             data-logo_alignment="left"
+             data-width="380">
+        </div>
+      </div>
+
+      <div id="loading-msg" style="margin-top:16px; font-size:0.85rem;"></div>
+
+      <div class="ip-note">
+        <span class="dot"></span>
+        Your IP address is logged for security: <b id="ip-preview">detecting...</b>
+      </div>
+
+      <div class="trust-row">
+        <span>🛡️ Secure Login</span>
+        <span>💵 Token-Based Rewards</span>
+        <span>🌍 Global Access</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  // Capture ?ref=USERID from the URL, if present, for referral signup
+  captureReferralCode();
+
+  // Show detected IP preview
+  getUserIP().then(ip => {
+    document.getElementById('ip-preview').innerText = ip;
+  });
+
+  // If already logged in with a valid (post-upgrade) session, go straight
+  // to dashboard. A session without a token is left over from before this
+  // security update — clear it instead of looping back and forth.
+  const existing = getSession();
+  if (existing && existing.token) {
+    window.location.href = 'dashboard.html';
+  } else if (existing) {
+    clearSession();
+  }
+
+  // Google Identity Services callback
+  async function handleGoogleLogin(response) {
+    document.getElementById('loading-msg').style.color = 'var(--text-dim)';
+    document.getElementById('loading-msg').innerText = 'Signing you in...';
+
+    try {
+      // Send Google's raw signed ID token to the backend — the backend
+      // verifies it directly with Google, so the server (not the browser)
+      // decides who just logged in. This can't be spoofed.
+      const result = await apiPost('loginWithGoogle', {
+        idToken: response.credential,
+        referredBy: getStoredReferralCode()
+      });
+
+      if (result.success) {
+        saveSession({
+          userId: result.user.UserID,
+          name: result.user.Name,
+          email: result.user.Email,
+          picture: result.picture || '',
+          balance: result.user.Balance || 0,
+          token: result.token
+        });
+        window.location.href = 'dashboard.html';
+      } else {
+        document.getElementById('loading-msg').style.color = 'var(--danger)';
+        document.getElementById('loading-msg').innerText = 'Login failed: ' + (result.error || 'please try again.');
+      }
+    } catch (err) {
+      document.getElementById('loading-msg').style.color = 'var(--danger)';
+      document.getElementById('loading-msg').innerText = 'Technical error: ' + err.message + ' — check API_URL in config.js.';
+    }
+  }
+</script>
+
+</body>
+</html>

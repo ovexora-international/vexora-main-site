@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdrawal System — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item active" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <h2>💳 Withdrawal System</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Cash out your tokens via FaucetPay, Crypto, or directly to PKR.</p>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Withdrawal Request</h3>
+
+        <div class="field">
+          <label>Payout Method</label>
+          <select id="wd-method" onchange="onMethodChange()">
+            <option value="faucetpay_ltc">FaucetPay (LTC) — min 10,000 Token</option>
+            <option value="crypto">Crypto Wallet (USDT) — min 100,000 Token</option>
+            <option value="pkr_easypaisa">Easypaisa (PKR) — min ~380 PKR</option>
+            <option value="pkr_jazzcash">JazzCash (PKR) — min ~380 PKR</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Amount (Token)</label>
+          <input type="number" id="wd-amount" placeholder="Enter token amount" oninput="updateConversion()">
+        </div>
+
+        <div class="card" style="background:var(--surface-2); margin-bottom:16px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+            <span style="color:var(--text-dim);">Minimum for this method</span>
+            <span id="min-label">10,000 Token</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px;">
+            <span style="color:var(--text-dim);">You'll receive (approx.)</span>
+            <span class="price-tag" id="payout-preview">0.00 USDT</span>
+          </div>
+        </div>
+
+        <div class="field" id="wallet-field">
+          <label id="wallet-label">FaucetPay Email</label>
+          <input type="text" id="wd-address" placeholder="Enter your FaucetPay account email">
+        </div>
+
+        <button class="btn btn-gold btn-block" onclick="submitWithdraw()">Submit Withdrawal Request</button>
+        <div id="wd-msg" style="margin-top:12px; font-size:0.85rem;"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:12px;">Rules</h3>
+        <ul style="color:var(--text-dim); font-size:0.88rem; line-height:2; padding-left:18px;">
+          <li><b>FaucetPay:</b> minimum 10,000 Token, paid in LTC</li>
+          <li><b>Crypto Wallet:</b> minimum 100,000 Token (≈1 USDT)</li>
+          <li><b>Easypaisa / JazzCash:</b> minimum ≈380 PKR worth of tokens</li>
+          <li>Processing time: 24–48 hours</li>
+          <li>Multiple accounts from the same IP will be treated as fraud</li>
+          <li>You are responsible for entering the correct payout details</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Withdrawal History</h2></div>
+    <div class="card table-scroll">
+      <table>
+        <thead><tr><th>Date</th><th>Token</th><th>Payout Value</th><th>Method</th><th>Status</th></tr></thead>
+        <tbody id="wd-history"><tr><td colspan="5" style="color:var(--text-dim);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  const TOKENS_TO_PKR_RATE = 0.0038; // must match backend Code.gs
+
+  const METHOD_INFO = {
+    faucetpay_ltc: { min: 10000, label: 'FaucetPay Email', currency: 'USDT (paid in LTC)' },
+    crypto:        { min: 100000, label: 'Crypto Wallet Address (USDT)', currency: 'USDT' },
+    pkr_easypaisa: { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'Easypaisa Number', currency: 'PKR' },
+    pkr_jazzcash:  { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'JazzCash Number', currency: 'PKR' }
+  };
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    refreshBalance();
+    loadHistory();
+    onMethodChange();
+  }
+
+  function refreshBalance() {
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+
+  function onMethodChange() {
+    const method = document.getElementById('wd-method').value;
+    const info = METHOD_INFO[method];
+    document.getElementById('min-label').innerText = formatTokens(info.min);
+    document.getElementById('wallet-label').innerText = info.label;
+    updateConversion();
+  }
+
+  function updateConversion() {
+    const method = document.getElementById('wd-method').value;
+    const tokens = Number(document.getElementById('wd-amount').value || 0);
+    let value, currency;
+    if (method === 'pkr_easypaisa' || method === 'pkr_jazzcash') {
+      value = tokens * TOKENS_TO_PKR_RATE;
+      currency = 'PKR';
+    } else {
+      value = tokensToUSDT(tokens);
+      currency = 'USDT';
+    }
+    document.getElementById('payout-preview').innerText = value.toFixed(2) + ' ' + currency;
+  }
+
+  async function submitWithdraw() {
+    const method = document.getElementById('wd-method').value;
+    const amount = document.getElementById('wd-amount').value;
+    const walletAddress = document.getElementById('wd-address').value;
+    const msg = document.getElementById('wd-msg');
+    const info = METHOD_INFO[method];
+
+    if (!amount || Number(amount) < info.min || !walletAddress) {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = 'Minimum ' + formatTokens(info.min) + ' and payout details are required.';
+      return;
+    }
+
+    msg.style.color = 'var(--text-dim)';
+    msg.innerText = 'Submitting...';
+
+    const res = await apiPost('requestWithdraw', { userId: user.userId, amount, method, walletAddress });
+    if (res.success) {
+      msg.style.color = 'var(--success)';
+      msg.innerText = res.message;
+      refreshBalance();
+      loadHistory();
+    } else {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = res.error;
+    }
+  }
+
+  async function loadHistory() {
+    const res = await apiGet('getWithdrawals', { userId: user.userId });
+    const tbody = document.getElementById('wd-history');
+    if (res.success && res.withdrawals.length) {
+      tbody.innerHTML = res.withdrawals.map(w => `
+        <tr>
+          <td>${new Date(w.RequestedAt).toLocaleDateString()}</td>
+          <td>${formatTokens(w.TokenAmount)}</td>
+          <td>${Number(w.PayoutValue || 0).toFixed(2)} ${w.PayoutCurrency || ''}</td>
+          <td>${w.Method}</td>
+          <td><span class="status-pill status-${String(w.Status).toLowerCase()}">${w.Status}</span></td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);">No withdrawals yet.</td></tr>';
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Prize Pool — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item active" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <h2>🏆 Daily Prize Pool</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Today's top 10 earners share the daily prize pool. Rankings update live and rewards are paid out automatically at midnight.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:20px; text-align:center; padding:24px;">
+      <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:6px;">Total Daily Pool</div>
+      <div style="font-family:'Sora',sans-serif; font-size:1.8rem; font-weight:800; color:var(--gold);" id="total-pool">0 Token</div>
+    </div>
+
+    <div class="card table-scroll">
+      <table>
+        <thead><tr><th>Rank</th><th>User</th><th>Tokens Earned Today</th><th>Est. Prize</th></tr></thead>
+        <tbody id="leaderboard-table"><tr><td colspan="4" style="color:var(--text-dim);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section-head"><h2>Prize Distribution</h2></div>
+    <div class="card">
+      <div class="grid grid-2" style="gap:10px;">
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>🥇 Rank 1</span><b style="color:var(--gold);">30%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>🥈 Rank 2</span><b style="color:var(--gold);">20%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>🥉 Rank 3</span><b style="color:var(--gold);">15%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Rank 4</span><b style="color:var(--gold);">10%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Rank 5</span><b style="color:var(--gold);">8%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Rank 6</span><b style="color:var(--gold);">6%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Rank 7</span><b style="color:var(--gold);">4.5%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Rank 8</span><b style="color:var(--gold);">3%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>Rank 9</span><b style="color:var(--gold);">2%</b></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0;"><span>Rank 10</span><b style="color:var(--gold);">1.5%</b></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+
+    apiGet('getPrizePool').then(res => {
+      document.getElementById('total-pool').innerText = formatTokens(res.totalPool);
+      const tbody = document.getElementById('leaderboard-table');
+      if (res.success && res.leaderboard.length) {
+        const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+        tbody.innerHTML = res.leaderboard.map(row => `
+          <tr>
+            <td>${medals[row.rank] || '#' + row.rank}</td>
+            <td>${row.name}</td>
+            <td>${formatTokens(row.tokensEarned)}</td>
+            <td style="color:var(--gold); font-weight:600;">${formatTokens(row.estimatedPrize)}</td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-dim);">No earnings recorded yet today. Be the first!</td></tr>';
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

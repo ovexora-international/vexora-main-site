@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTC Ads — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Daily Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+      <h2 style="margin-top:8px;">🎬 PTC Ads</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Click an ad below, wait for the full timer, then collect your reward.</p>
+    </div>
+
+    <div class="grid grid-4" id="ads-container">
+      <div class="card" style="grid-column: 1/-1; text-align:center; color:var(--text-dim);">Loading ads...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Ad Watch Modal -->
+<div id="ad-modal" style="display:none; position:fixed; inset:0; background:rgba(6,7,20,0.85); align-items:center; justify-content:center; z-index:200; padding:16px;">
+  <div class="card" style="width:100%; max-width:340px; text-align:center;">
+    <h3 id="modal-ad-title" style="margin-bottom:20px;">Ad Title</h3>
+    <div class="timer-ring" style="width:130px; height:130px;">
+      <svg width="130" height="130">
+        <circle class="bg" cx="65" cy="65" r="56"></circle>
+        <circle class="progress" id="progress-circle" cx="65" cy="65" r="56"></circle>
+      </svg>
+      <div class="time-left" id="time-left" style="font-size:1.6rem;">5</div>
+    </div>
+    <p style="color:var(--text-dim); font-size:0.85rem; margin:16px 0;">Keep this window open until the ad finishes.</p>
+    <button class="btn btn-outline btn-block" id="close-modal-btn" onclick="closeModal()" disabled>Please wait...</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  let currentAd = null;
+  let timerInterval = null;
+  const REWARD_TABLE = { '5': 20, '10': 30, '30': 50, '60': 75 };
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+    loadAds();
+  }
+
+  async function loadAds() {
+    const res = await apiGet('getAds');
+    const container = document.getElementById('ads-container');
+    if (res.success && res.ads.length) {
+      container.innerHTML = res.ads.map(ad => `
+        <div class="ad-card">
+          <div class="ad-card-top">
+            <span class="duration-tag">${ad.Duration}s</span>
+            <span class="price-tag">${formatTokens(REWARD_TABLE[String(ad.Duration)] || 0)}</span>
+          </div>
+          <div style="font-weight:600;">${ad.Title}</div>
+          <button class="btn btn-gold btn-block" onclick='openAd(${JSON.stringify(ad)})'>Watch Ad</button>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div class="card" style="grid-column: 1/-1; text-align:center; color:var(--text-dim);">No active ads right now. Please check back later.</div>';
+    }
+  }
+
+  let currentTicket = null;
+
+  async function openAd(ad) {
+    currentAd = ad;
+    currentTicket = null;
+    document.getElementById('modal-ad-title').innerText = ad.Title;
+    document.getElementById('ad-modal').style.display = 'flex';
+
+    // Ask the server for a signed ticket first — it proves to the server
+    // later that this specific timer actually ran to completion.
+    const start = await apiPost('startAdView', { adId: ad.AdID });
+    if (!start.success) {
+      alert(start.error || 'Could not start this ad.');
+      closeModal();
+      return;
+    }
+    currentTicket = start.ticket;
+
+    window.open(ad.TargetURL, '_blank');
+
+    let duration = Number(ad.Duration);
+    let remaining = duration;
+    const circle = document.getElementById('progress-circle');
+    const circumference = 2 * Math.PI * 56;
+    circle.style.strokeDasharray = circumference;
+    circle.style.strokeDashoffset = 0;
+
+    document.getElementById('close-modal-btn').disabled = true;
+    document.getElementById('close-modal-btn').innerText = 'Please wait...';
+    document.getElementById('time-left').innerText = remaining;
+
+    timerInterval = setInterval(() => {
+      remaining--;
+      document.getElementById('time-left').innerText = remaining;
+      circle.style.strokeDashoffset = circumference * (1 - remaining / duration);
+
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('close-modal-btn').disabled = false;
+        document.getElementById('close-modal-btn').innerText = 'Claim Reward';
+        document.getElementById('close-modal-btn').onclick = claimReward;
+      }
+    }, 1000);
+  }
+
+  async function claimReward() {
+    const res = await apiPost('watchAd', { adId: currentAd.AdID, ticket: currentTicket });
+    if (res.success) {
+      alert('Congrats! ' + formatTokens(res.reward) + ' has been credited.');
+    } else {
+      alert(res.error);
+    }
+    closeModal();
+    loadAds();
+    apiGet('getUserFull', { email: user.email }).then(r => {
+      if (r.success) document.getElementById('balance-amount').innerText = formatTokens(r.user.Balance || 0);
+    });
+  }
+
+  function closeModal() {
+    clearInterval(timerInterval);
+    document.getElementById('ad-modal').style.display = 'none';
+    document.getElementById('close-modal-btn').onclick = closeModal;
+  }
+</script>
+
+</body>
+</html>
