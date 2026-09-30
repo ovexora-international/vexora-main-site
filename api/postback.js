@@ -7,7 +7,7 @@
 // backend's plain-text answer ("ok" / "ERROR: ...") which is what
 // offerwalls expect to see.
 export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBhPX3efkISli9hte4CtsgyR9zgBbIQrEdBlG4elcbKG53bLMY6t9IuUW__u5tiswOVw/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypz49bqs_67lR7V9Fs2TxlZYyus1lntpMm8Lpk1YgEuy3DSF1GNh2lxxGUF2Trl6E/exec';
 
   let body = req.body;
   if (Buffer.isBuffer(body)) body = body.toString('utf8');
