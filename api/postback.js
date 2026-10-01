@@ -1,30 +1,44 @@
-
 // Postback bridge: BitcoTasks (and other offerwalls) call this URL on your
-// own domain — BitcoTasks specifically sends an HTTP POST — and this hands
-// the data to the Google Apps Script backend. It accepts POST with a
-// JSON body, POST with a form-encoded body, AND a plain GET query string,
-// since different providers do it differently, and replies with the
-// backend's plain-text answer ("ok" / "ERROR: ...") which is what
-// offerwalls expect to see.
-export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbypz49bqs_67lR7V9Fs2TxlZYyus1lntpMm8Lpk1YgEuy3DSF1GNh2lxxGUF2Trl6E/exec';
+// own domain and it hands the data to the Google Apps Script backend.
+//
+// This reads the RAW request body itself (bodyParser disabled below)
+// instead of relying on Vercel's automatic JSON/form parsing — some
+// offerwall servers send POST data without a standard Content-Type
+// header, which makes automatic parsing silently return nothing. Reading
+// the raw stream ourselves works no matter what headers were sent.
+export const config = {
+  api: { bodyParser: false }
+};
 
-  let body = req.body;
-  if (Buffer.isBuffer(body)) body = body.toString('utf8');
+function readRawBody(req) {
+  return new Promise((resolve) => {
+    let data = '';
+    req.on('data', chunk => { data += chunk; });
+    req.on('end', () => resolve(data));
+    req.on('error', () => resolve(''));
+  });
+}
 
-  let parsedBody = {};
-  if (typeof body === 'object' && body !== null) {
-    parsedBody = body; // Vercel already parsed JSON or form-encoded for us
-  } else if (typeof body === 'string' && body.length) {
-    const trimmed = body.trim();
-    if (trimmed.startsWith('{')) {
-      try { parsedBody = JSON.parse(trimmed); } catch (e) { parsedBody = {}; }
-    } else {
-      try { parsedBody = Object.fromEntries(new URLSearchParams(trimmed)); } catch (e) { parsedBody = {}; }
-    }
+function parseAnyBody(raw) {
+  if (!raw) return {};
+  const trimmed = raw.trim();
+  if (!trimmed) return {};
+  if (trimmed.startsWith('{')) {
+    try { return JSON.parse(trimmed); } catch (e) { /* fall through */ }
   }
+  try {
+    return Object.fromEntries(new URLSearchParams(trimmed));
+  } catch (e) {
+    return {};
+  }
+}
 
-  const all = Object.assign({}, req.query || {}, parsedBody);
+export default async function handler(req, res) {
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBhPX3efkISli9hte4CtsgyR9zgBbIQrEdBlG4elcbKG53bLMY6t9IuUW__u5tiswOVw/exec';
+
+  const raw = await readRawBody(req);
+  const bodyParams = parseAnyBody(raw);
+  const all = Object.assign({}, req.query || {}, bodyParams);
 
   const allowed = ['wall_id', 'subId', 'transId', 'reward', 'payout', 'status', 'signature',
                    'debug', 'userIp', 'user_id', 'amount', 'transaction_id', 'secret_key'];
@@ -32,6 +46,9 @@ export default async function handler(req, res) {
   allowed.forEach(k => {
     if (all[k] !== undefined && all[k] !== null && all[k] !== '') out.append(k, String(all[k]));
   });
+  // Also log exactly what raw bytes arrived, so if something's still off
+  // we can see it immediately in PostbackLog without guessing.
+  out.append('_rawLen', String(raw.length));
 
   try {
     const response = await fetch(APPS_SCRIPT_URL + '?' + out.toString());
