@@ -58,7 +58,7 @@ function parseAnyBody(raw, contentType) {
 }
 
 export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDERmVZqSqdqPyUj8xICWPjSlWMC9UbyQCT8ilMcjNg_IvqSHxkuX-iXyqN3rNddokYg/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbze-jbYx-zPNXzScr8kZ4R71Lfr16rLCyPc35lIRWrRdSwnpNwMIRHeB3kXCrLzOU3uEQ/exec';
 
   const contentType = req.headers['content-type'] || '';
   const raw = await readRawBody(req);
@@ -73,11 +73,8 @@ export default async function handler(req, res) {
     if (all[k] !== undefined && all[k] !== null && all[k] !== '') out.append(k, String(all[k]));
   });
 
-  // Debug breadcrumbs so PostbackLog shows exactly what was received,
-  // in case the format still isn't what we expect.
   out.append('_ct', contentType.substring(0, 60));
   out.append('_rawLen', String(raw.length));
-  out.append('_rawPreview', raw.substring(0, 350));
 
   try {
     const response = await fetch(APPS_SCRIPT_URL + '?' + out.toString());
@@ -87,4 +84,4 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(500).send('ERROR: proxy - ' + err.message);
   }
-}
+                   }
