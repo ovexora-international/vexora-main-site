@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Shortlinks — Vexora International</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +38,6 @@
     <div class="logo">Vexora <span>Intl.</span></div>
     <div class="tagline">Earning Platform</div>
 
-
     <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span><span class="label">Home</span></a>
     <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
     <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
@@ -56,12 +55,12 @@
   <div class="main-content">
     <div class="page-head">
       <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
-      <h2 style="margin-top:8px;">🔗 Shortlinks</h2>
-      <p style="color:var(--text-dim); font-size:0.9rem;">Open a link, wait for the required time, then come back to claim your reward.</p>
+      <h1 style="margin-top:10px;">🔗 Shortlinks</h1>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Open a link and complete the visit — your reward is credited automatically, no need to come back and claim.</p>
     </div>
 
     <div class="grid grid-3" id="links-container">
-      <div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">Loading links...</div>
+      <div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">Loading shortlinks...</div>
     </div>
   </div>
 
@@ -96,6 +95,7 @@
   async function loadLinks() {
     const res = await apiGet('getShortlinks');
     const container = document.getElementById('links-container');
+
     if (res.success && res.shortlinks.length) {
       linksById = {};
       res.shortlinks.forEach(link => { linksById[link.LinkID] = link; });
@@ -106,14 +106,18 @@
             <span class="duration-tag">Shortlink</span>
             <span class="price-tag">${formatTokens(link.Reward)}</span>
           </div>
-          <div style="font-weight:600;">${escapeHtml(link.Title)}</div>
-          <button class="btn btn-gold btn-block" data-link-id="${escapeHtml(link.LinkID)}" onclick="goToLink(this.dataset.linkId)">Open Link</button>
-          <button class="btn btn-outline btn-block" data-link-id="${escapeHtml(link.LinkID)}" onclick="claimLink(this.dataset.linkId, this)">Claim After Returning</button>
-          <div class="link-msg" id="msg-${escapeHtml(link.LinkID)}" style="margin-top:8px; font-size:0.82rem; min-height:1.2em;"></div>
+          <div style="font-weight:600; margin-bottom:10px;">${escapeHtml(link.Title)}</div>
+          ${link.ClaimedToday
+            ? `<button class="btn btn-outline btn-block" disabled style="opacity:0.55; cursor:not-allowed;">✓ Claimed — resets at midnight</button>`
+            : `<button class="btn btn-gold btn-block" data-link-id="${escapeHtml(link.LinkID)}" onclick="goToLink(this.dataset.linkId)">Open Link</button>
+               <div style="margin-top:8px; font-size:0.78rem; color:var(--text-dim);">Reward credits automatically when you finish.</div>`
+          }
         </div>
       `).join('');
-    } else {
+    } else if (res.success) {
       container.innerHTML = '<div class="card" style="grid-column:1/-1; text-align:center; color:var(--text-dim);">No shortlinks available right now.</div>';
+    } else {
+      container.innerHTML = '<div class="card" style="grid-column:1/-1; text-align:center; color:var(--danger);">' + escapeHtml(res.error || 'Could not load shortlinks.') + '</div>';
     }
   }
 
@@ -121,31 +125,6 @@
     const link = linksById[linkId];
     if (!link) return;
     window.open(link.ShortURL || link.OriginalURL, '_blank');
-  }
-
-  async function claimLink(linkId, btn) {
-    const msg = document.getElementById('msg-' + linkId);
-    btn.disabled = true;
-    const originalText = btn.innerText;
-    btn.innerText = 'Claiming...';
-    if (msg) { msg.style.color = 'var(--text-dim)'; msg.innerText = ''; }
-
-    try {
-      const res = await apiPost('completeShortlink', { linkId });
-      if (res.success) {
-        if (msg) { msg.style.color = 'var(--success)'; msg.innerText = '+' + formatTokens(res.reward) + ' credited!'; }
-        apiGet('getUserFull', { email: user.email }).then(r => {
-          if (r.success) document.getElementById('balance-amount').innerText = formatTokens(r.user.Balance || 0);
-        });
-      } else {
-        if (msg) { msg.style.color = 'var(--danger)'; msg.innerText = res.error || 'Something went wrong.'; }
-      }
-    } catch (err) {
-      if (msg) { msg.style.color = 'var(--danger)'; msg.innerText = 'Network error, please try again.'; }
-    } finally {
-      btn.disabled = false;
-      btn.innerText = originalText;
-    }
   }
 </script>
 
