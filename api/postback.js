@@ -1,5 +1,4 @@
-
-    // Postback bridge: BitcoTasks (and other offerwalls) call this URL on your
+// Postback bridge: BitcoTasks (and other offerwalls) call this URL on your
 // own domain and it hands the data to the Google Apps Script backend.
 //
 // Reads the RAW request body itself (bodyParser disabled below) so it
@@ -59,7 +58,7 @@ function parseAnyBody(raw, contentType) {
 }
 
 export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbze-jbYx-zPNXzScr8kZ4R71Lfr16rLCyPc35lIRWrRdSwnpNwMIRHeB3kXCrLzOU3uEQ/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzioqkM1-Vtb4uas8prArdf3cOhGy-FgI5xoyNHzn-q3Tx1VV7mOI1Vrl8drfQBGYoZ5A/exec';
 
   const contentType = req.headers['content-type'] || '';
   const raw = await readRawBody(req);
