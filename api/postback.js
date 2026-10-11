@@ -68,7 +68,8 @@ export default async function handler(req, res) {
   const allowed = ['wall_id', 'subId', 'transId', 'reward', 'reward_name', 'reward_value',
                    'payout', 'status', 'signature', 'userIp', 'country',
                    'user_id', 'amount', 'transaction_id', 'secret_key',
-                   'tracking_id', 'offer_id', 'password'];   // last three: CPAGrip
+                   'tracking_id', 'offer_id', 'password',   // CPAGrip
+                   'trans_id', 'amount_usd', 'amount_local', 'secure_hash', 'hash'];   // CPX Research
   const out = new URLSearchParams({ action: 'offerwallPostback' });
   allowed.forEach(k => {
     if (all[k] !== undefined && all[k] !== null && all[k] !== '') out.append(k, String(all[k]));
