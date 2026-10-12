@@ -58,7 +58,7 @@ function parseAnyBody(raw, contentType) {
 }
 
 export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzioqkM1-Vtb4uas8prArdf3cOhGy-FgI5xoyNHzn-q3Tx1VV7mOI1Vrl8drfQBGYoZ5A/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKJy5tNub9YwG2Og_695bTER4287c65N_zY8Y8AVcBYt0ooq9yxpvQzCCoquJFdP2NKg/exec';
 
   const contentType = req.headers['content-type'] || '';
   const raw = await readRawBody(req);
