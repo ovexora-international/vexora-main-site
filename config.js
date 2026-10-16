@@ -15,7 +15,7 @@ const CONFIG = {
   GOOGLE_CLIENT_ID:"28032329800-cbomi45s0ioea9mfoqsq6rlk802gqg59.apps.googleusercontent.com",
   HCAPTCHA_SITE_KEY: "49de5aea-4cc0-4d06-93e4-aef6ab0c9a7e",
   SITE_NAME: "Vexora International",
-  TELEGRAM_GROUP_URL: "",   // <- put your Telegram group link here, e.g. "https://t.me/yourgroup" (empty = link hidden)
+  TELEGRAM_GROUP_URL: "https://t.me/+hEK82WTteH9lYTZk",   // <- put your Telegram group link here, e.g. "https://t.me/yourgroup" (empty = link hidden)
   TELEGRAM_BOT_USERNAME: "Vexora2026bot",   // <- your bot username WITHOUT the @ sign, e.g. "VexoraBot" (needed for the Telegram login button)
   CURRENCY_SYMBOL: "",
   CURRENCY_NAME: "Token",
