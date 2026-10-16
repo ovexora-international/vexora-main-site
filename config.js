@@ -16,7 +16,7 @@ const CONFIG = {
   HCAPTCHA_SITE_KEY: "49de5aea-4cc0-4d06-93e4-aef6ab0c9a7e",
   SITE_NAME: "Vexora International",
   TELEGRAM_GROUP_URL: "",   // <- put your Telegram group link here, e.g. "https://t.me/yourgroup" (empty = link hidden)
-  TELEGRAM_BOT_USERNAME: "",   // <- your bot username WITHOUT the @ sign, e.g. "VexoraBot" (needed for the Telegram login button)
+  TELEGRAM_BOT_USERNAME: "Vexora2026bot",   // <- your bot username WITHOUT the @ sign, e.g. "VexoraBot" (needed for the Telegram login button)
   CURRENCY_SYMBOL: "",
   CURRENCY_NAME: "Token",
   TOKENS_PER_USDT: 100000 // 100,000 Token = 1 USDT
