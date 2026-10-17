@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdrawal System — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+
+    <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span><span class="label">Home</span></a>
+    <a class="nav-item" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item active" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Weekly Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <h2>💳 Withdrawal System</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Cash out your tokens via FaucetPay, Crypto, or directly to PKR.</p>
+    </div>
+
+    <!-- Telegram check: connect Telegram + join the group before withdrawing -->
+    <div class="card" id="tg-card" style="display:none; margin-bottom:18px;">
+      <h3 style="margin-bottom:4px;">✈️ Telegram verification</h3>
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:14px;">Before you can withdraw, connect your Telegram account and join our group. You only do this once.</p>
+
+      <div style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px;">
+        <div style="font-weight:600; margin-bottom:6px;">Step 1 — Connect Telegram</div>
+        <div id="tg-step1"></div>
+      </div>
+
+      <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+        <div style="font-weight:600; margin-bottom:6px;">Step 2 — Join our group</div>
+        <div id="tg-step2"></div>
+      </div>
+      <div id="tg-msg" style="margin-top:10px; font-size:0.85rem;"></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:6px;">Withdrawal Request</h3>
+
+        <div class="field">
+          <label>Payout Method</label>
+          <select id="wd-method" onchange="onMethodChange()">
+            <option value="faucetpay_ltc">FaucetPay (LTC) — min 10,000 Token</option>
+            <option value="crypto">Crypto Wallet (USDT) — min 100,000 Token</option>
+            <option value="pkr_easypaisa">Easypaisa (PKR) — min ~380 PKR</option>
+            <option value="pkr_jazzcash">JazzCash (PKR) — min ~380 PKR</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Amount (Token)</label>
+          <input type="number" id="wd-amount" placeholder="Enter token amount" oninput="updateConversion()">
+        </div>
+
+        <div class="card" style="background:var(--surface-2); margin-bottom:16px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+            <span style="color:var(--text-dim);">Minimum for this method</span>
+            <span id="min-label">10,000 Token</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px;">
+            <span style="color:var(--text-dim);">You'll receive (approx.)</span>
+            <span class="price-tag" id="payout-preview">0.00 USDT</span>
+          </div>
+        </div>
+
+        <div class="field" id="wallet-field">
+          <label id="wallet-label">FaucetPay Email</label>
+          <input type="text" id="wd-address" placeholder="Enter your FaucetPay account email">
+        </div>
+
+        <button class="btn btn-gold btn-block" onclick="submitWithdraw()">Submit Withdrawal Request</button>
+        <div id="wd-msg" style="margin-top:12px; font-size:0.85rem;"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:12px;">Rules</h3>
+        <ul style="color:var(--text-dim); font-size:0.88rem; line-height:2; padding-left:18px;">
+          <li><b>FaucetPay:</b> minimum 10,000 Token, paid instantly in LTC to your FaucetPay email</li>
+          <li><b>Crypto Wallet:</b> minimum 100,000 Token (≈1 USDT)</li>
+          <li><b>Easypaisa / JazzCash:</b> minimum ≈380 PKR worth of tokens</li>
+          <li>Processing time: 24–48 hours</li>
+          <li>Multiple accounts from the same IP will be treated as fraud</li>
+          <li>You are responsible for entering the correct payout details</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-head"><h2>Withdrawal History</h2></div>
+    <div class="card table-scroll">
+      <table>
+        <thead><tr><th>Date</th><th>Token</th><th>Payout Value</th><th>Method</th><th>Status</th></tr></thead>
+        <tbody id="wd-history"><tr><td colspan="5" style="color:var(--text-dim);">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  const TOKENS_TO_PKR_RATE = 0.0038; // must match backend Code.gs
+
+  const METHOD_INFO = {
+    faucetpay_ltc: { min: 10000, label: 'FaucetPay Email', currency: 'USDT (paid in LTC)' },
+    crypto:        { min: 100000, label: 'Crypto Wallet Address (USDT)', currency: 'USDT' },
+    pkr_easypaisa: { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'Easypaisa Number', currency: 'PKR' },
+    pkr_jazzcash:  { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'JazzCash Number', currency: 'PKR' }
+  };
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    refreshBalance();
+    loadHistory();
+    onMethodChange();
+    loadTelegram();
+  }
+
+  function refreshBalance() {
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+
+  function onMethodChange() {
+    const method = document.getElementById('wd-method').value;
+    const info = METHOD_INFO[method];
+    document.getElementById('min-label').innerText = formatTokens(info.min);
+    document.getElementById('wallet-label').innerText = info.label;
+    updateConversion();
+  }
+
+  async function updateConversion() {
+    const method = document.getElementById('wd-method').value;
+    const tokens = Number(document.getElementById('wd-amount').value || 0);
+    let value, currency;
+    if (method === 'pkr_easypaisa' || method === 'pkr_jazzcash') {
+      value = tokens * TOKENS_TO_PKR_RATE;
+      currency = 'PKR';
+    } else if (method === 'faucetpay_ltc') {
+      const ltcUsd = await getLtcUsd();
+      value = ltcUsd ? tokensToUSDT(tokens) / ltcUsd : 0;
+      document.getElementById('payout-preview').innerText = ltcUsd ? value.toFixed(6) + ' LTC' : 'LTC rate unavailable';
+      return;
+    } else {
+      value = tokensToUSDT(tokens);
+      currency = 'USDT';
+    }
+    document.getElementById('payout-preview').innerText = value.toFixed(2) + ' ' + currency;
+  }
+
+
+  // ---------------- Telegram steps ----------------
+  // Step 1: the button opens our bot in Telegram with a one-time code; the user presses START, comes back and taps Check.
+  // Step 2: join the group, then tap Verify.
+  let tgState = { enabled: false, linked: false, joined: false, username: '', pendingCode: '' };
+
+  function tgEsc(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function tgBotLink(code) { return 'https://t.me/' + encodeURIComponent(CONFIG.TELEGRAM_BOT_USERNAME) + '?start=' + encodeURIComponent(code); }
+  function tgMsg(text, color) {
+    const m = document.getElementById('tg-msg');
+    m.style.color = color || 'var(--text-dim)';
+    m.innerText = text;
+  }
+
+  async function loadTelegram() {
+    const res = await apiGet('getTelegramStatus');
+    if (!res || !res.success || !res.enabled) return;          // feature not switched on: nothing is shown or required
+    tgState = { enabled: true, linked: res.linked, joined: res.joined, username: res.username, pendingCode: '' };
+    document.getElementById('tg-card').style.display = 'block';
+    renderTelegram();
+  }
+
+  function renderTelegram() {
+    const s1 = document.getElementById('tg-step1');
+    const s2 = document.getElementById('tg-step2');
+    const bot = CONFIG.TELEGRAM_BOT_USERNAME;
+    const group = CONFIG.TELEGRAM_GROUP_URL;
+
+    if (tgState.linked) {
+      s1.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ Connected' + (tgState.username ? ': @' + tgEsc(tgState.username) : '') + '</span>';
+    } else if (!bot) {
+      s1.innerHTML = '<span style="color:var(--danger);">Telegram is not set up yet (bot username missing). Please contact support.</span>';
+    } else if (!tgState.pendingCode) {
+      s1.innerHTML = '<button class="btn btn-gold btn-block" id="tg-connect" onclick="startTelegramConnect()">✈️ Connect Telegram</button>';
+    } else {
+      s1.innerHTML =
+        '<div style="color:var(--text-dim); font-size:0.85rem; margin-bottom:10px;">1) Telegram should open our bot. Press <b>START</b> there.<br>2) Come back here and tap <b>Check</b>.</div>' +
+        '<a class="btn btn-outline btn-block" href="' + tgEsc(tgBotLink(tgState.pendingCode)) + '" target="_blank" rel="noopener noreferrer" style="margin-bottom:8px;">Open Telegram bot again</a>' +
+        '<button class="btn btn-gold btn-block" id="tg-check" onclick="checkTelegramLink()">I pressed START — Check</button>';
+    }
+
+    if (!tgState.linked) {
+      s2.innerHTML = '<span style="color:var(--text-dim);">Finish Step 1 first.</span>';
+    } else if (tgState.joined) {
+      s2.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ You are in the group</span>';
+    } else {
+      s2.innerHTML = (group ? '<a class="btn btn-outline btn-block" href="' + tgEsc(group) + '" target="_blank" rel="noopener noreferrer" style="margin-bottom:8px;">Open group</a>' : '') +
+        '<button class="btn btn-gold btn-block" id="tg-verify" onclick="verifyTelegramJoin()">I joined — Verify</button>';
+    }
+  }
+
+  async function startTelegramConnect() {
+    const btn = document.getElementById('tg-connect');
+    const tab = window.open('', '_blank');                     // opened inside the tap so the phone does not block it
+    if (btn) btn.disabled = true;
+    tgMsg('Preparing...');
+    const res = await apiPost('startTelegramLink', {});
+    if (btn) btn.disabled = false;
+    if (!res.success) {
+      if (tab) tab.close();
+      tgMsg(res.error || 'Could not start. Please try again.', 'var(--danger)');
+      return;
+    }
+    tgState.pendingCode = res.code;
+    tgMsg('');
+    renderTelegram();
+    if (tab) tab.location.href = tgBotLink(res.code); else window.location.href = tgBotLink(res.code);
+  }
+
+  async function checkTelegramLink() {
+    const btn = document.getElementById('tg-check');
+    if (btn) btn.disabled = true;
+    tgMsg('Checking...');
+    const res = await apiPost('confirmTelegramLink', {});
+    if (btn) btn.disabled = false;
+    if (res.success) {
+      tgState.linked = true;
+      tgState.username = res.username || '';
+      tgState.pendingCode = '';
+      tgMsg('Telegram connected. Now join the group (Step 2).', 'var(--success)');
+      renderTelegram();
+    } else {
+      tgMsg(res.error || 'Not connected yet.', 'var(--danger)');
+    }
+  }
+
+  async function verifyTelegramJoin() {
+    const btn = document.getElementById('tg-verify');
+    if (btn) btn.disabled = true;
+    tgMsg('Checking...');
+    const res = await apiPost('checkTelegramJoin', {});
+    if (btn) btn.disabled = false;
+    if (res.success) {
+      tgState.joined = true;
+      tgMsg('Done! You can withdraw now.', 'var(--success)');
+      renderTelegram();
+    } else {
+      tgMsg(res.error || 'Could not verify.', 'var(--danger)');
+    }
+  }
+
+  async function submitWithdraw() {
+    const method = document.getElementById('wd-method').value;
+    const amount = document.getElementById('wd-amount').value;
+    const walletAddress = document.getElementById('wd-address').value;
+    const msg = document.getElementById('wd-msg');
+    const info = METHOD_INFO[method];
+
+    if (tgState.enabled && !(tgState.linked && tgState.joined)) {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = 'Please finish the Telegram steps above before withdrawing.';
+      return;
+    }
+
+    if (!amount || Number(amount) < info.min || !walletAddress) {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = 'Minimum ' + formatTokens(info.min) + ' and payout details are required.';
+      return;
+    }
+
+    msg.style.color = 'var(--text-dim)';
+    msg.innerText = 'Submitting...';
+
+    const res = await apiPost('requestWithdraw', { userId: user.userId, amount, method, walletAddress });
+    if (res.success) {
+      msg.style.color = 'var(--success)';
+      msg.innerText = res.message;
+      refreshBalance();
+      loadHistory();
+    } else {
+      msg.style.color = 'var(--danger)';
+      msg.innerText = res.error;
+    }
+  }
+
+  async function loadHistory() {
+    const res = await apiGet('getWithdrawals', { userId: user.userId });
+    const tbody = document.getElementById('wd-history');
+    if (res.success && res.withdrawals.length) {
+      tbody.innerHTML = res.withdrawals.map(w => `
+        <tr>
+          <td>${new Date(w.RequestedAt).toLocaleDateString()}</td>
+          <td>${formatTokens(w.TokenAmount)}</td>
+          <td>${String(w.PayoutCurrency) === 'LTC' ? Number(w.PayoutValue || 0).toFixed(6) : Number(w.PayoutValue || 0).toFixed(2)} ${w.PayoutCurrency || ''}</td>
+          <td>${w.Method}</td>
+          <td><span class="status-pill status-${String(w.Status).toLowerCase()}">${w.Status}</span></td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim);">No withdrawals yet.</td></tr>';
+    }
+  }
+</script>
+
+</body>
+</html>
