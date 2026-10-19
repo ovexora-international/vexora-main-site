@@ -145,10 +145,10 @@
   const TOKENS_TO_PKR_RATE = 0.0038; // must match backend Code.gs
 
   const METHOD_INFO = {
-    faucetpay_ltc: { min: 10000, label: 'FaucetPay Email', currency: 'USDT (paid in LTC)' },
-    crypto:        { min: 100000, label: 'Crypto Wallet Address (USDT)', currency: 'USDT' },
-    pkr_easypaisa: { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'Easypaisa Number', currency: 'PKR' },
-    pkr_jazzcash:  { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'JazzCash Number', currency: 'PKR' }
+    faucetpay_ltc: { min: 10000, label: 'FaucetPay Email', hint: 'Your FaucetPay email', currency: 'USDT (paid in LTC)' },
+    crypto:        { min: 100000, label: 'Crypto Wallet Address (USDT)', hint: 'Wallet address (letters and numbers, no spaces)', currency: 'USDT' },
+    pkr_easypaisa: { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'Easypaisa Number', hint: '03XXXXXXXXX', currency: 'PKR' },
+    pkr_jazzcash:  { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'JazzCash Number', hint: '03XXXXXXXXX', currency: 'PKR' }
   };
 
   if (user) {
@@ -172,6 +172,7 @@
     const info = METHOD_INFO[method];
     document.getElementById('min-label').innerText = formatTokens(info.min);
     document.getElementById('wallet-label').innerText = info.label;
+    document.getElementById('wd-address').placeholder = info.hint || '';
     updateConversion();
   }
 
@@ -325,7 +326,7 @@
   async function submitWithdraw() {
     const method = document.getElementById('wd-method').value;
     const amount = document.getElementById('wd-amount').value;
-    const walletAddress = document.getElementById('wd-address').value;
+    const walletAddress = document.getElementById('wd-address').value.trim();
     const msg = document.getElementById('wd-msg');
     const info = METHOD_INFO[method];
 
@@ -364,9 +365,9 @@
         <tr>
           <td>${new Date(w.RequestedAt).toLocaleDateString()}</td>
           <td>${formatTokens(w.TokenAmount)}</td>
-          <td>${String(w.PayoutCurrency) === 'LTC' ? Number(w.PayoutValue || 0).toFixed(6) : Number(w.PayoutValue || 0).toFixed(2)} ${w.PayoutCurrency || ''}</td>
-          <td>${w.Method}</td>
-          <td><span class="status-pill status-${String(w.Status).toLowerCase()}">${w.Status}</span></td>
+          <td>${String(w.PayoutCurrency) === 'LTC' ? Number(w.PayoutValue || 0).toFixed(6) : Number(w.PayoutValue || 0).toFixed(2)} ${tgEsc(w.PayoutCurrency || '')}</td>
+          <td>${tgEsc(w.Method)}</td>
+          <td><span class="status-pill status-${tgEsc(String(w.Status).toLowerCase())}">${tgEsc(w.Status)}</span></td>
         </tr>
       `).join('');
     } else {
