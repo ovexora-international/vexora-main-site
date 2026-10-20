@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTC Ads — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+
+    <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span><span class="label">Home</span></a>
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Weekly Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+      <h2 style="margin-top:8px;">🎬 PTC Ads</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Click an ad, wait for the full timer, then collect your reward. Each ad comes back 24 hours after you finish it.</p>
+    </div>
+
+    <div class="grid grid-4" id="ads-container">
+      <div class="card" style="grid-column: 1/-1; text-align:center; color:var(--text-dim);">Loading ads...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Ad viewer: the timer sits in a bar at the TOP, the ad opens inside the page below it -->
+<div id="ad-viewer" style="display:none; position:fixed; inset:0; z-index:200; background:var(--bg); flex-direction:column;">
+  <div style="padding:10px 14px 8px; background:var(--surface); border-bottom:1px solid var(--border);">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div style="min-width:0; flex:1;">
+        <div id="viewer-title" style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Ad</div>
+        <div id="viewer-status" style="font-size:0.78rem; color:var(--text-dim);">Stay on this page until the timer ends</div>
+      </div>
+      <div id="viewer-time" style="font-family:'Sora',sans-serif; font-weight:800; font-size:1.5rem; color:var(--gold); min-width:60px; text-align:right;">0s</div>
+      <button class="btn btn-gold" id="viewer-claim" disabled style="padding:9px 16px; opacity:0.5;">Claim</button>
+    </div>
+    <div style="height:6px; background:var(--surface-3); border-radius:99px; margin-top:8px; overflow:hidden;">
+      <div id="viewer-progress" style="height:100%; width:0%; background:linear-gradient(90deg, var(--gold-bright), var(--gold)); transition:width .25s linear;"></div>
+    </div>
+    <div style="margin-top:6px; font-size:0.78rem; color:var(--text-dim);">
+      Ad blank or not loading? <a href="#" id="viewer-newtab" target="_blank" rel="noopener" style="color:var(--teal);">Open in a new tab</a>
+      &nbsp;·&nbsp; <a href="#" onclick="closeViewer(); return false;" style="color:var(--danger);">Close (no reward)</a>
+    </div>
+  </div>
+  <iframe id="viewer-frame" title="Advertisement" referrerpolicy="no-referrer"
+          sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+          style="flex:1; width:100%; border:0; background:#fff;"></iframe>
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  let currentAd = null;
+  let currentTicket = null;
+  let viewerTimer = null;
+  let adsById = {};
+  let cooldownTimer = null;
+  let clockOffset = 0;       // server time - phone time, so countdowns are right even if the phone clock is off
+  const localLocks = {};     // locks set right after a claim, so the card changes instantly
+  const REWARD_TABLE = { '5': 20, '10': 30, '30': 50, '60': 75 };
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function fmtLeft(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+  }
+
+  function serverNow() { return Date.now() + clockOffset; }
+
+  function refreshBalance() {
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    refreshBalance();
+    loadAds();
+  }
+
+  async function loadAds() {
+    const res = await apiGet('getAds');
+    const container = document.getElementById('ads-container');
+    if (res.success && res.ads.length) {
+      clockOffset = Number(res.serverNow || Date.now()) - Date.now();
+      adsById = {};
+      const ads = res.ads.map(a => {
+        const at = Math.max(Number(a.AvailableAt || 0), Number(localLocks[a.AdID] || 0));
+        adsById[a.AdID] = a;
+        return Object.assign({}, a, { AvailableAt: at > serverNow() ? at : 0 });
+      });
+      // ads you can watch now stay on top; finished ones move to the bottom, soonest-unlocking first
+      ads.sort((x, y) => {
+        if (!x.AvailableAt && !y.AvailableAt) return 0;
+        if (!x.AvailableAt) return -1;
+        if (!y.AvailableAt) return 1;
+        return x.AvailableAt - y.AvailableAt;
+      });
+
+      container.innerHTML = ads.map(ad => {
+        const locked = ad.AvailableAt > 0;
+        return `
+        <div class="ad-card" style="${locked ? 'opacity:0.8;' : ''}">
+          <div class="ad-card-top">
+            <span class="duration-tag">${Number(ad.Duration)}s</span>
+            <span class="price-tag">${formatTokens(REWARD_TABLE[String(ad.Duration)] || 0)}</span>
+          </div>
+          <div style="font-weight:600;">${escapeHtml(ad.Title)}</div>
+          ${locked
+            ? `<button class="btn btn-outline btn-block" disabled style="cursor:not-allowed;">
+                 ⏳ Available in <span class="cd" data-at="${ad.AvailableAt}">--:--:--</span>
+               </button>`
+            : `<button class="btn btn-gold btn-block" data-ad-id="${escapeHtml(ad.AdID)}" onclick="openAd(adsById[this.dataset.adId])">Watch Ad</button>`}
+        </div>`;
+      }).join('');
+      startCooldownTicker();
+    } else {
+      container.innerHTML = '<div class="card" style="grid-column: 1/-1; text-align:center; color:var(--text-dim);">No active ads right now. Please check back later.</div>';
+    }
+  }
+
+  // Each finished ad shows a live countdown and unlocks by itself after 24 hours.
+  function startCooldownTicker() {
+    clearInterval(cooldownTimer);
+    const tick = () => {
+      let locked = false, unlocked = false;
+      document.querySelectorAll('.cd').forEach(el => {
+        const left = Number(el.dataset.at) - serverNow();
+        if (left <= 0) unlocked = true;
+        else { locked = true; el.innerText = fmtLeft(left); }
+      });
+      if (unlocked) { clearInterval(cooldownTimer); loadAds(); }
+      else if (!locked) clearInterval(cooldownTimer);
+    };
+    tick();
+    cooldownTimer = setInterval(tick, 1000);
+  }
+
+  // ---------------- ad viewer ----------------
+  async function openAd(ad) {
+    if (!ad) return;
+    currentAd = ad;
+    currentTicket = null;
+
+    // the server hands out a signed ticket first; it proves later that the timer really ran
+    const start = await apiPost('startAdView', { adId: ad.AdID });
+    if (!start.success) {
+      alert(start.error || 'Could not start this ad.');
+      loadAds();
+      return;
+    }
+    currentTicket = start.ticket;
+
+    const total = Number(ad.Duration) * 1000;
+    let watchedMs = 0;
+    const url = /^https:\/\//i.test(String(ad.TargetURL)) ? ad.TargetURL : 'about:blank';
+
+    document.getElementById('viewer-title').innerText = ad.Title;
+    document.getElementById('viewer-newtab').href = url;
+    const claimBtn = document.getElementById('viewer-claim');
+    claimBtn.disabled = true;
+    claimBtn.style.opacity = 0.5;
+    claimBtn.innerText = 'Claim';
+    claimBtn.onclick = claimReward;
+    document.getElementById('viewer-time').innerText = Number(ad.Duration) + 's';
+    document.getElementById('viewer-progress').style.width = '0%';
+    document.getElementById('viewer-status').innerText = 'Stay on this page until the timer ends';
+    // Pages of OUR OWN site (like promo.html) are opened WITHOUT "allow-same-origin", so ad scripts inside them
+    // can never read the visitor's login session. Other people's ads keep the normal sandbox.
+    const frame = document.getElementById('viewer-frame');
+    let sandbox = 'allow-scripts allow-forms allow-same-origin allow-popups';
+    try {
+      const bare = h => String(h).replace(/^www\./i, '').toLowerCase();
+      if (bare(new URL(url).hostname) === bare(window.location.hostname)) {
+        sandbox = 'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
+      }
+    } catch (e) {}
+    frame.setAttribute('sandbox', sandbox);
+    frame.src = url;
+    document.getElementById('ad-viewer').style.display = 'flex';
+
+    // the clock only runs while this page is visible — switching tabs pauses it
+    clearInterval(viewerTimer);
+    viewerTimer = setInterval(() => {
+      if (document.visibilityState !== 'visible') {
+        document.getElementById('viewer-status').innerText = '⏸ Paused — come back to this page';
+        return;
+      }
+      watchedMs += 250;
+      const left = Math.max(0, total - watchedMs);
+      document.getElementById('viewer-time').innerText = Math.ceil(left / 1000) + 's';
+      document.getElementById('viewer-progress').style.width = Math.min(100, (watchedMs / total) * 100) + '%';
+      document.getElementById('viewer-status').innerText = 'Stay on this page until the timer ends';
+      if (left <= 0) {
+        clearInterval(viewerTimer);
+        claimBtn.disabled = false;
+        claimBtn.style.opacity = 1;
+        document.getElementById('viewer-status').innerText = '✅ Done! Tap Claim to get your reward';
+      }
+    }, 250);
+  }
+
+  async function claimReward() {
+    const btn = document.getElementById('viewer-claim');
+    btn.disabled = true;
+    btn.innerText = '...';
+    const res = await apiPost('watchAd', { adId: currentAd.AdID, ticket: currentTicket });
+    const adId = currentAd.AdID;
+    closeViewer();
+    if (res.success) {
+      localLocks[adId] = serverNow() + DAY_MS;     // card changes right away; the server keeps the real record
+      alert('Congrats! ' + formatTokens(res.reward) + ' has been credited. This ad is available again in 24 hours.');
+    } else {
+      alert(res.error);
+    }
+    loadAds();
+    refreshBalance();
+  }
+
+  function closeViewer() {
+    clearInterval(viewerTimer);
+    document.getElementById('viewer-frame').src = 'about:blank';
+    document.getElementById('ad-viewer').style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
