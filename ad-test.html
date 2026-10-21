@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Ad test</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: #0B0D1E; color: #F2F4FF; font-family: system-ui, sans-serif; line-height: 1.5; }
+  .box { max-width: 460px; margin: 0 auto; }
+  h1 { font-size: 1.2rem; margin: 0 0 6px; }
+  .warn { background: rgba(245,185,66,0.10); border: 1px solid rgba(245,185,66,0.4); color: #FFD36B; border-radius: 12px; padding: 10px 12px; font-size: 0.82rem; margin: 10px 0 14px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; margin-bottom: 8px; border-radius: 12px; background: #14172E; border: 1px solid rgba(255,255,255,0.10); font-size: 0.88rem; }
+  .row b { font-weight: 600; }
+  .ok { color: #4ADE80; } .bad { color: #FF7B8A; } .wait { color: #9AA0C3; }
+  #verdict { margin-top: 14px; padding: 14px; border-radius: 14px; background: #1B1F3B; border: 1px solid rgba(255,255,255,0.14); font-size: 0.9rem; }
+  .small { font-size: 0.74rem; color: #9AA0C3; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="box" id="report">
+  <h1>Ad test</h1>
+  <div>This page loads your two ad scripts directly (no frame) and tells you what happens.</div>
+  <div class="warn">Open this page in a <b>private / incognito tab</b> where you are not logged in to the website, and delete this file after the test.</div>
+
+  <div class="row"><b>Top: social bar script</b><span id="s-top" class="wait">loading…</span></div>
+  <div class="row"><b>Bottom: banner / tag script</b><span id="s-bottom" class="wait">loading…</span></div>
+  <div class="row"><b>Ad elements drawn on the page</b><span id="drawn" class="wait">0</span></div>
+  <div class="row"><b>Page is top window (not framed)</b><span id="top-win" class="wait">…</span></div>
+  <div id="verdict">Testing… please wait 10 seconds.</div>
+  <div class="small">Keep this tab open and do not scroll away. Some social bars appear after a few seconds.</div>
+</div>
+
+<div id="slot-top"></div>
+<div id="slot-bottom" style="text-align:center; margin-top:20px;"></div>
+
+<script>
+  const TESTS = [
+    { id: 'top',    src: 'https://bauval.org/14/7b5a80059870b3ea839f6a7d952fd0ef' },
+    { id: 'bottom', src: 'https://5gvci.com/act/files/tag.min.js?z=12014417' }
+  ];
+  const state = { top: 'wait', bottom: 'wait' };
+  let drawn = 0;
+
+  document.getElementById('top-win').textContent = (window.top === window) ? 'yes' : 'no';
+  document.getElementById('top-win').className = (window.top === window) ? 'ok' : 'bad';
+
+  // counts the elements that the ad scripts add to the page (changes inside our own report box are ignored,
+  // otherwise updating the number would trigger the observer again and again)
+  new MutationObserver(list => {
+    let before = drawn;
+    list.forEach(m => {
+      if (m.target && m.target.closest && m.target.closest('#report')) return;
+      m.addedNodes.forEach(n => {
+        if (n.nodeType !== 1) return;
+        if (n.tagName === 'SCRIPT' && n.getAttribute('data-test')) return;
+        drawn++;
+      });
+    });
+    if (drawn !== before) {
+      const el = document.getElementById('drawn');
+      el.textContent = drawn;
+      el.className = 'ok';
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true });
+
+  function mark(id, ok) {
+    state[id] = ok ? 'ok' : 'bad';
+    const el = document.getElementById('s-' + id);
+    el.textContent = ok ? 'loaded ✓' : 'BLOCKED ✗';
+    el.className = ok ? 'ok' : 'bad';
+  }
+
+  TESTS.forEach(t => {
+    const s = document.createElement('script');
+    s.src = t.src;
+    s.async = true;
+    s.setAttribute('data-cfasync', 'false');
+    s.setAttribute('data-test', '1');
+    s.onload = () => mark(t.id, true);
+    s.onerror = () => mark(t.id, false);
+    document.getElementById('slot-' + t.id).appendChild(s);
+  });
+
+  function verdict() {
+    const v = document.getElementById('verdict');
+    const blocked = TESTS.filter(t => state[t.id] === 'bad').length;
+    const loaded = TESTS.filter(t => state[t.id] === 'ok').length;
+    let html;
+    if (blocked === TESTS.length) {
+      html = '❌ <b>Both scripts are blocked.</b> An ad blocker, private DNS, or the browser is stopping them. Try another browser or turn off the blocker, then reload.';
+    } else if (loaded > 0 && drawn === 0) {
+      html = '⚠️ <b>The scripts load but draw nothing.</b> This usually means the ad network is not serving this website (the site is not approved for that ad code) or there is no ad available right now. A frame or sandbox is NOT the cause.';
+    } else if (drawn > 0) {
+      html = '✅ <b>The ads are drawn when the page is not framed.</b> So the problem inside the PTC viewer is the frame / sandbox, and a "no-frame" mode can fix it.';
+    } else {
+      html = '⏳ Still waiting for the scripts. Reload the page once and wait 10 seconds.';
+    }
+    v.innerHTML = html;
+  }
+  setTimeout(verdict, 10000);
+</script>
+</body>
+</html>
