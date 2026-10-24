@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTC Ads — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+
+    <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span><span class="label">Home</span></a>
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Weekly Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+      <h2 style="margin-top:8px;">🎬 PTC Ads</h2>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Open an ad, wait for the timer, pass the quick security check and claim your reward. Each ad comes back 24 hours after you finish it.</p>
+    </div>
+
+    <div id="reward-banner" style="display:none; margin-bottom:14px; padding:12px 14px; border-radius:12px; font-size:0.9rem; font-weight:600;
+         color:var(--success); background:rgba(74,222,128,0.10); border:1px solid rgba(74,222,128,0.35);"></div>
+
+    <div class="grid grid-4" id="ads-container">
+      <div class="card" style="grid-column: 1/-1; text-align:center; color:var(--text-dim);">Loading ads...</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+  let currentAd = null;
+  let currentTicket = null;
+  let viewerTimer = null;
+  let adsById = {};
+  let cooldownTimer = null;
+  let clockOffset = 0;       // server time - phone time, so countdowns are right even if the phone clock is off
+  const localLocks = {};     // locks set right after a claim, so the card changes instantly
+  const REWARD_TABLE = { '5': 20, '10': 30, '30': 50, '60': 75 };
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function fmtLeft(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+  }
+
+  function serverNow() { return Date.now() + clockOffset; }
+
+  function refreshBalance() {
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    refreshBalance();
+    loadAds();
+  }
+
+  async function loadAds() {
+    const res = await apiGet('getAds');
+    const container = document.getElementById('ads-container');
+    if (res.success && res.ads.length) {
+      clockOffset = Number(res.serverNow || Date.now()) - Date.now();
+      adsById = {};
+      const ads = res.ads.map(a => {
+        const at = Math.max(Number(a.AvailableAt || 0), Number(localLocks[a.AdID] || 0));
+        adsById[a.AdID] = a;
+        return Object.assign({}, a, { AvailableAt: at > serverNow() ? at : 0 });
+      });
+      // ads you can watch now stay on top; finished ones move to the bottom, soonest-unlocking first
+      ads.sort((x, y) => {
+        if (!x.AvailableAt && !y.AvailableAt) return 0;
+        if (!x.AvailableAt) return -1;
+        if (!y.AvailableAt) return 1;
+        return x.AvailableAt - y.AvailableAt;
+      });
+
+      container.innerHTML = ads.map(ad => {
+        const locked = ad.AvailableAt > 0;
+        return `
+        <div class="ad-card" style="${locked ? 'opacity:0.8;' : ''}">
+          <div class="ad-card-top">
+            <span class="duration-tag">${Number(ad.Duration)}s</span>
+            <span class="price-tag">${formatTokens(REWARD_TABLE[String(ad.Duration)] || 0)}</span>
+          </div>
+          <div style="font-weight:600;">${escapeHtml(ad.Title)}</div>
+          ${locked
+            ? `<button class="btn btn-outline btn-block" disabled style="cursor:not-allowed;">
+                 ⏳ Available in <span class="cd" data-at="${ad.AvailableAt}">--:--:--</span>
+               </button>`
+            : `<button class="btn btn-gold btn-block" data-ad-id="${escapeHtml(ad.AdID)}" onclick="openAd(adsById[this.dataset.adId])">Watch Ad</button>`}
+        </div>`;
+      }).join('');
+      startCooldownTicker();
+    } else {
+      container.innerHTML = '<div class="card" style="grid-column: 1/-1; text-align:center; color:var(--text-dim);">No active ads right now. Please check back later.</div>';
+    }
+  }
+
+  // Each finished ad shows a live countdown and unlocks by itself after 24 hours.
+  function startCooldownTicker() {
+    clearInterval(cooldownTimer);
+    const tick = () => {
+      let locked = false, unlocked = false;
+      document.querySelectorAll('.cd').forEach(el => {
+        const left = Number(el.dataset.at) - serverNow();
+        if (left <= 0) unlocked = true;
+        else { locked = true; el.innerText = fmtLeft(left); }
+      });
+      if (unlocked) { clearInterval(cooldownTimer); loadAds(); }
+      else if (!locked) clearInterval(cooldownTimer);
+    };
+    tick();
+    cooldownTimer = setInterval(tick, 1000);
+  }
+
+  // Every ad (admin's or an advertiser's) opens on the ad page, which has the social bar, banner, timer,
+  // security check and the Claim button. After the claim it brings the user back here.
+  function openAd(ad) {
+    if (!ad) return;
+    window.location.href = 'ptc-view.html?ad=' + encodeURIComponent(ad.AdID);
+  }
+
+  // shows "+30 Token" after coming back from the ad page
+  (function showReward() {
+    const reward = new URLSearchParams(window.location.search).get('reward');
+    if (!reward) return;
+    const box = document.getElementById('reward-banner');
+    box.innerText = '🎉 ' + formatTokens(Number(reward) || 0) + ' has been credited! This ad is available again in 24 hours.';
+    box.style.display = 'block';
+    try { window.history.replaceState(null, '', 'earn-ptc.html'); } catch (e) {}
+    setTimeout(() => { box.style.display = 'none'; }, 9000);
+  })();
+</script>
+
+</body>
+</html>
