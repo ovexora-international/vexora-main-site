@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Shortlinks — Vexora International</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<style>
+  /* ---- shortlinks page: one card per network, numbered buttons for its links ---- */
+  .sl-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .sl-stat { padding: 12px 6px; text-align: center; border-radius: var(--radius-md, 14px); border: 1px solid var(--border);
+             background: linear-gradient(160deg, var(--surface-2), var(--surface)); }
+  .sl-stat .lbl { font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); line-height: 1.3; }
+  .sl-stat .val { margin-top: 5px; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.12rem; }
+  .sl-stat .val.gold { color: var(--gold-bright); }
+  .sl-stat .val.teal { color: var(--teal); }
+  .sl-stat .unit { font-size: 0.62rem; font-weight: 600; color: var(--text-dim); margin-left: 2px; }
+
+  .sl-net { margin-bottom: 12px; padding: 14px 14px 16px; border-radius: 18px; border: 1px solid var(--border);
+            background: linear-gradient(160deg, var(--surface-2), var(--surface)); box-shadow: var(--shadow-sm); }
+  .sl-net.all-done { opacity: 0.72; }
+  .sl-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .sl-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.05rem; word-break: break-word; }
+  .sl-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .sl-pill { font-size: 0.68rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+  .sl-pill.views { color: var(--text-dim); background: var(--surface-3); }
+  .sl-pill.reward { color: var(--gold-bright); background: rgba(245,185,66,0.12); border: 1px solid rgba(245,185,66,0.32); }
+  .sl-flag { flex: 0 0 auto; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--success); background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.32); }
+
+  .sl-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sl-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .sl-btn { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.02rem;
+            color: var(--gold-bright); background: rgba(245,185,66,0.08); border: 2px solid rgba(245,185,66,0.55);
+            transition: transform .12s ease, background .12s ease; }
+  .sl-btn:hover { background: rgba(245,185,66,0.18); }
+  .sl-btn:active { transform: scale(0.93); }
+  .sl-btn.busy { opacity: 0.5; cursor: wait; }
+  .sl-btn.done { cursor: default; color: var(--success); background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.45); }
+  .sl-btn.done:hover { background: rgba(74,222,128,0.08); }
+  .sl-r { font-size: 0.62rem; font-weight: 600; color: var(--text-dim); }
+  .sl-foot { margin-top: 14px; text-align: center; font-size: 0.76rem; color: var(--text-dim); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="top-nav">
+    <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+    <div class="balance-pill">
+      <span class="balance-icon">💰</span>
+      <div>
+        <div class="label">Balance</div>
+        <div class="amount" id="balance-amount">0 Token</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-close" onclick="toggleMenu()">✕</div>
+    <div class="drawer-user">
+      <img id="user-pic" src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="">
+      <div>
+        <div class="drawer-user-name" id="user-name">User</div>
+        <div class="drawer-user-email" id="user-email">—</div>
+      </div>
+    </div>
+
+    <div class="logo">Vexora <span>Intl.</span></div>
+    <div class="tagline">Earning Platform</div>
+
+    <a class="nav-item" href="dashboard.html"><span class="icon">🏠</span><span class="label">Home</span></a>
+    <a class="nav-item active" href="earn-hub.html"><span class="icon">💎</span><span class="label">Earn Money</span></a>
+    <a class="nav-item" href="withdraw.html"><span class="icon">💳</span><span class="label">Withdrawal System</span></a>
+    <a class="nav-item" href="advertising.html"><span class="icon">📢</span><span class="label">Advertising Board</span></a>
+    <a class="nav-item" href="referrals.html"><span class="icon">🤝</span><span class="label">Referral Program</span></a>
+    <a class="nav-item" href="prize-pool.html"><span class="icon">🏆</span><span class="label">Weekly Prize Pool</span></a>
+
+    <div class="drawer-footer">
+      <a class="nav-item" href="#" onclick="clearSession(); window.location.href='index.html';">
+        <span class="icon">🚪</span><span class="label">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page-head">
+      <a href="earn-hub.html" style="color:var(--text-dim); font-size:0.85rem;">← Back to Earn Money</a>
+      <h1 style="margin-top:10px;">🔗 Shortlinks</h1>
+      <p style="color:var(--text-dim); font-size:0.9rem;">Tap a number to open that link and finish its steps. Your reward is credited automatically, no need to come back and claim. Every link comes back at midnight.</p>
+    </div>
+
+    <div class="sl-stats">
+      <div class="sl-stat"><div class="lbl">Links available</div><div class="val teal" id="st-links">–</div></div>
+      <div class="sl-stat"><div class="lbl">Rewards available</div><div class="val gold" id="st-avail">–</div></div>
+      <div class="sl-stat"><div class="lbl">Total rewards</div><div class="val" id="st-total">–</div></div>
+    </div>
+
+    <div id="links-container">
+      <div class="card" style="text-align:center; color:var(--text-dim);">Loading shortlinks...</div>
+    </div>
+
+    <div class="sl-foot">✓ green = done today · gold = ready to open</div>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+<script>
+  const user = requireLogin();
+
+  let linksById = {};
+  let lastLoad = 0;
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+  const fmt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
+
+  function refreshBalance() {
+    apiGet('getUserFull', { email: user.email }).then(res => {
+      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+    });
+  }
+
+  if (user) {
+    document.getElementById('user-name').innerText = user.name;
+    document.getElementById('user-email').innerText = user.email;
+    document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
+    refreshBalance();
+    loadLinks();
+
+    // when the visitor comes back from a shortlink, the list and the balance update by themselves
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastLoad > 3000) { loadLinks(); refreshBalance(); }
+    });
+  }
+
+  // one card per network: the links of the same network sit together, next to its name
+  function groupByNetwork(list) {
+    const groups = [], index = {};
+    list.forEach(link => {
+      const name = String(link.Network || link.Title || 'Shortlink').trim() || 'Shortlink';
+      const key = name.toLowerCase();
+      if (!(key in index)) { index[key] = groups.length; groups.push({ name: name, links: [] }); }
+      groups[index[key]].links.push(link);
+    });
+    groups.forEach(g => { g.open = g.links.filter(l => !l.ClaimedToday).length; });
+    // networks that still have links to open come first, finished ones go to the bottom (the order of the sheet is kept otherwise)
+    return groups.map((g, i) => ({ g: g, i: i })).sort((x, y) => ((x.g.open === 0) - (y.g.open === 0)) || (x.i - y.i)).map(x => x.g);
+  }
+
+  function rewardText(links) {
+    const rs = links.map(l => Number(l.Reward) || 0);
+    const lo = Math.min.apply(null, rs), hi = Math.max.apply(null, rs);
+    return lo === hi ? fmt(lo) + ' Token' : fmt(lo) + '–' + fmt(hi) + ' Token';
+  }
+
+  async function loadLinks() {
+    const res = await apiGet('getShortlinks');
+    lastLoad = Date.now();
+    const container = document.getElementById('links-container');
+
+    if (!res.success) {
+      container.innerHTML = '<div class="card" style="text-align:center; color:var(--danger);">' + escapeHtml(res.error || 'Could not load shortlinks.') + '</div>';
+      return;
+    }
+    const list = res.shortlinks || [];
+    if (!list.length) {
+      container.innerHTML = '<div class="card" style="text-align:center; color:var(--text-dim);">No shortlinks available right now.</div>';
+      ['st-links', 'st-avail', 'st-total'].forEach(id => { document.getElementById(id).innerText = '–'; });
+      return;
+    }
+
+    linksById = {};
+    list.forEach(l => { linksById[l.LinkID] = l; });
+
+    // the three numbers at the top
+    const open = list.filter(l => !l.ClaimedToday);
+    document.getElementById('st-links').innerText = open.length + ' / ' + list.length;
+    document.getElementById('st-avail').innerHTML = fmt(open.reduce((s, l) => s + (Number(l.Reward) || 0), 0)) + '<span class="unit">Token</span>';
+    document.getElementById('st-total').innerHTML = fmt(list.reduce((s, l) => s + (Number(l.Reward) || 0), 0)) + '<span class="unit">Token</span>';
+
+    container.innerHTML = groupByNetwork(list).map(g => {
+      const done = g.links.length - g.open;
+      const sameReward = new Set(g.links.map(l => Number(l.Reward) || 0)).size === 1;
+      const buttons = g.links.map((l, i) => {
+        const label = (g.links.length > 1 ? 'Link ' : '') + (i + 1) + (l.ClaimedToday ? ', done today' : ', ' + fmt(l.Reward) + ' Token');
+        const cell = l.ClaimedToday
+          ? '<button class="sl-btn done" disabled aria-label="' + escapeHtml(label) + '">✓</button>'
+          : '<button class="sl-btn" data-link-id="' + escapeHtml(l.LinkID) + '" aria-label="' + escapeHtml(label) + '" onclick="goToLink(this)">' + (i + 1) + '</button>';
+        return '<div class="sl-cell">' + cell + (sameReward ? '' : '<span class="sl-r">' + fmt(l.Reward) + '</span>') + '</div>';
+      }).join('');
+      return `
+      <div class="sl-net ${g.open === 0 ? 'all-done' : ''}">
+        <div class="sl-head">
+          <div>
+            <div class="sl-name">${escapeHtml(g.name)}</div>
+            <div class="sl-pills">
+              <span class="sl-pill views">Done ${done} / ${g.links.length}</span>
+              <span class="sl-pill reward">${escapeHtml(rewardText(g.links))}${g.links.length > 1 && sameReward ? ' each' : ''}</span>
+            </div>
+          </div>
+          ${g.open === 0 ? '<span class="sl-flag">✓ All done</span>' : ''}
+        </div>
+        <div class="sl-btns">${buttons}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // The new tab is opened right away (inside the tap, so phone browsers do not block it).
+  // The server notes the start time first; the reward is only paid if enough time passes before the claim page.
+  async function goToLink(btn) {
+    const link = linksById[btn.dataset.linkId];
+    if (!link || btn.classList.contains('busy')) return;
+    btn.classList.add('busy');
+    const target = link.ShortURL || link.OriginalURL;
+    const tab = window.open('', '_blank');
+    const res = await apiPost('startShortlink', { linkId: link.LinkID });
+    btn.classList.remove('busy');
+    if (!res.success) {
+      if (tab) tab.close();
+      alert(res.error || 'Could not open this link right now.');
+      loadLinks();
+      return;
+    }
+    if (tab) tab.location.href = target; else window.location.href = target;
+  }
+</script>
+
+</body>
+</html>
