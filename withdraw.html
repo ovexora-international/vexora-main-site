@@ -88,6 +88,7 @@
             <option value="pkr_easypaisa">Easypaisa (PKR) — min ~380 PKR</option>
             <option value="pkr_jazzcash">JazzCash (PKR) — min ~380 PKR</option>
           </select>
+          <div id="country-note" style="display:none; margin-top:6px; font-size:0.78rem; color:var(--text-dim);"></div>
         </div>
 
         <div class="field">
@@ -151,19 +152,48 @@
     pkr_jazzcash:  { min: Math.ceil(380 / TOKENS_TO_PKR_RATE), label: 'JazzCash Number', hint: '03XXXXXXXXX', currency: 'PKR' }
   };
 
+  // Pakistan sees only the PKR options; every other country sees the other options (PKR is hidden).
+  // If the country is not known yet nothing is hidden.
+  const ALL_METHODS = [
+    ['faucetpay_ltc', 'FaucetPay (LTC) — min 10,000 Token'],
+    ['crypto', 'Crypto Wallet (USDT) — min 100,000 Token'],
+    ['pkr_easypaisa', 'Easypaisa (PKR) — min ~380 PKR'],
+    ['pkr_jazzcash', 'JazzCash (PKR) — min ~380 PKR']
+  ];
+  function applyCountry(country) {
+    const c = String(country || '').toUpperCase();
+    let allowed = ALL_METHODS;
+    if (c === 'PK') allowed = ALL_METHODS.filter(m => m[0].indexOf('pkr_') === 0);
+    else if (c) allowed = ALL_METHODS.filter(m => m[0].indexOf('pkr_') !== 0);
+    const sel = document.getElementById('wd-method');
+    const previous = sel.value;
+    sel.innerHTML = allowed.map(m => '<option value="' + m[0] + '">' + m[1] + '</option>').join('');
+    if (allowed.some(m => m[0] === previous)) sel.value = previous;
+    const note = document.getElementById('country-note');
+    note.style.display = c ? 'block' : 'none';
+    note.innerText = c === 'PK' ? '🇵🇰 Accounts in Pakistan withdraw in PKR.' : (c ? 'PKR payouts (Easypaisa / JazzCash) are only for accounts in Pakistan.' : '');
+    onMethodChange();
+  }
+
   if (user) {
     document.getElementById('user-name').innerText = user.name;
     document.getElementById('user-email').innerText = user.email;
     document.getElementById('user-pic').src = user.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`;
     refreshBalance();
     loadHistory();
-    onMethodChange();
+    applyCountry(user.country);
     loadTelegram();
   }
 
   function refreshBalance() {
     apiGet('getUserFull', { email: user.email }).then(res => {
-      if (res.success) document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+      if (res.success) {
+        document.getElementById('balance-amount').innerText = formatTokens(res.user.Balance || 0);
+        if (res.user.Country) {
+          applyCountry(res.user.Country);
+          if (user.country !== res.user.Country) { user.country = res.user.Country; saveSession(user); }
+        }
+      }
     });
   }
 
@@ -223,7 +253,7 @@
     const s1 = document.getElementById('tg-step1');
     const s2 = document.getElementById('tg-step2');
     const bot = CONFIG.TELEGRAM_BOT_USERNAME;
-    const group = CONFIG.TELEGRAM_GROUP_URL;
+    const group = getTelegramGroupUrl();
 
     if (tgState.linked) {
       s1.innerHTML = '<span style="color:var(--success); font-weight:600;">✅ Connected' + (tgState.username ? ': @' + tgEsc(tgState.username) : '') + '</span>';
